@@ -1,8 +1,8 @@
 <p align="center">
     <b>@li0ard/umarsh</b><br>
     <b>Umarsh (transit pass system) parser</b>
-    <br>
-    <a href="https://li0ard.is-cool.dev/umarsh">docs</a>
+    <!--<br>
+    <a href="https://li0ard.is-cool.dev/umarsh">docs</a>-->
     <br><br>
     <!--
     <a href="https://github.com/li0ard/umarsh/actions/workflows/test.yml"><img src="https://github.com/li0ard/umarsh/actions/workflows/test.yml/badge.svg" /></a>

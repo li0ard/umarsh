@@ -1,7 +1,7 @@
 import { ProductType } from "./const.js";
 import { decodeDate } from "./utils.js";
 
-/** Параметры карты */
+/** Card settings */
 export class PassengerCardSettings {
     public readonly cardExpiration: Date;
     public readonly zonePresentation: number;
@@ -15,8 +15,8 @@ export class PassengerCardSettings {
     public readonly epDiscountPercent: number = 0;
     public readonly transportCardCode: ProductType;
     public readonly vehicleMask: number;
-    public readonly cardActivationState: number;
-    public readonly cardLockState: number;
+    public readonly cardActivationState: boolean;
+    public readonly cardLockState: boolean;
     public readonly validityPeriod: number;
     public readonly transactionParity: number;
     
@@ -39,23 +39,22 @@ export class PassengerCardSettings {
         this.transportCardCode = productType;
         this.vehicleMask = data[31];
 
-        this.cardActivationState = (~data[34] & 0xFF) >> 7;
+        this.cardActivationState = ((~data[34] & 0xFF) >> 7) == 1;
         this.validityPeriod = data[34] & 0b01111111;
         this.lastOperationTermNumber = ((data[35] << 16) | (data[36] << 8) | data[37]) >>> 0;
         this.lastOperationDate = decodeDate((data[38] << 8) | data[39]);
         this.transactionParity = data[40] >> 7;
-        this.cardLockState = (~data[42] & 0xFF) >> 7;
+        this.cardLockState = ((~data[42] & 0xFF) >> 7) == 1;
     }
 
-    toString() {
+    toString(): string {
         return `PassengerCardSettings(cardExpiration=${this.cardExpiration}, zonePresentation=${this.zonePresentation}, initialZone=${this.initialZone}, finalZone=${this.finalZone}, offlineCounter=${this.offlineCounter}, lastOperationTermType=${this.lastOperationTermType}, lastOperationTermNumber=${this.lastOperationTermNumber}, lastOperationDate=${this.lastOperationDate}, personalCard=${this.personalCard}, epDiscountPercent=${this.epDiscountPercent}, transportCardCode=${ProductType[this.transportCardCode]}, vehicleMask=${this.vehicleMask}, cardActivationState=${this.cardActivationState}, cardLockState=${this.cardLockState}, validityPeriod=${this.validityPeriod}, transactionParity=${this.transactionParity})`;
     }
 }
 
-/** Абстракция проездного документа */
+/** Card (Transit pass) template */
 export abstract class TransitPass {
     constructor(public readonly data: Uint8Array) {}
-    /** Тип проездного документа */
     abstract get productType(): ProductType;
 
     protected get units(): number {
@@ -68,18 +67,17 @@ export abstract class TransitPass {
 /**
  * **EP - Electronic Purse**
  * 
- * Проездной документ с автоматическим продлением и балансом в транспортные единицах (копейках)
+ * Transit pass with automatic renewal and balance in transport units (kopeyka)
  */
 export class ElectronicPurseCard extends TransitPass {
     get productType(): ProductType { return ProductType.EP; }
     constructor(data: Uint8Array) { super(data); }
     
-    /** Баланс */
     get balance(): number {
         return (this.units * 100) + (this.data[42] & 0b01111111);
     }
 
-    toString() {
+    toString(): string {
         return `ElectronicPurseCard(balance=${this.balance}, productType=${ProductType[this.productType]})`;
     }
 }
@@ -87,18 +85,17 @@ export class ElectronicPurseCard extends TransitPass {
 /**
  * **SU - Season unlimited**
  * 
- * Проездной документ на срок и не имеющий ограничение по количеству поездок.
+ * Transit pass valid for specific period with no limit on number of trips
  */
 export class SeasonUnlimitedCard extends TransitPass {
     get productType(): ProductType { return ProductType.SU; }
     constructor(data: Uint8Array) { super(data); }
     
-    /** Стоимость проездного документа */
     get cost(): number {
         return (this.units * 100) + (this.data[42] & 0b01111111);
     }
 
-    toString() {
+    toString(): string {
         return `SeasonUnlimitedCard(cost=${this.cost}, productType=${ProductType[this.productType]})`;
     }
 }
@@ -106,17 +103,16 @@ export class SeasonUnlimitedCard extends TransitPass {
 /**
  * **SL - Season limited**
  * 
- * Проездной документ на срок и имеющий ограничение по количеству поездок.
- * С возможностью переноса поездок на следующий срок действия при продлении
+ * Transit pass valid for specific period with limit on number of trips.
+ * Trips can be carried over to next validity period upon renewal
  */
 export class SeasonLimitedCard extends TransitPass {
     get productType(): ProductType { return ProductType.SL; }
     constructor(data: Uint8Array) { super(data); }
     
-    /** Остаток поездок */
     get tripsQuantity(): number { return this.units; }
 
-    toString() {
+    toString(): string {
         return `SeasonLimitedCard(tripsQuantity=${this.tripsQuantity}, productType=${ProductType[this.productType]})`;
     }
 }
@@ -124,14 +120,13 @@ export class SeasonLimitedCard extends TransitPass {
 /**
  * **LT - Limited Trip**
  * 
- * Проездной документ на срок и имеющий ограничение по количеству поездок.
- * Без возможности переноса поездок на следующий срок действия при продлении
+ * Transit pass valid for specific period with limit on number of trips.
+ * Trips cannot be carried over to next validity period upon renewal
  */
 export class LimitedCard extends TransitPass {
     get productType(): ProductType { return ProductType.LT; }
     constructor(data: Uint8Array) { super(data); }
     
-    /** Остаток поездок */
     get tripsQuantity(): number { return this.units; }
     
     get expireDateNextPeriod(): Date | null {
@@ -151,7 +146,7 @@ export class LimitedCard extends TransitPass {
         return (this.data[30] & 0b01111111) === ProductType.LT && (this.data[16] & 0b00010000) !== 0;
     }
 
-    toString() {
+    toString(): string {
         return `SeasonLimitedCard(tripsQuantity=${this.tripsQuantity}, expireDateNextPeriod=${this.expireDateNextPeriod}, tripsQuantityNextPeriod=${this.tripsQuantityNextPeriod}, ltpCntTripsPurchasedInCurrentPeriod=${this.ltpCntTripsPurchasedInCurrentPeriod}, permLt=${this.permLt}, productType=${ProductType[this.productType]})`;
     }
 }
@@ -159,24 +154,22 @@ export class LimitedCard extends TransitPass {
 /**
  * **OL - Omsk Limited**
  * 
- * Непополняемый проездной документ с ежемесячным возобновляемым лимитом.
- * Имеет отдельный баланс для городских и для пригородных поездок
+ * Non-refillable transit pass with monthly renewable limit.
+ * Has separate balances for city and suburban
  */
 export class OmskLimitedCard extends TransitPass {
     get productType(): ProductType { return ProductType.OL; }
     constructor(data: Uint8Array) { super(data); }
     
-    /** Остаток поездок */
     get tripsQuantity(): number {
         return (this.units >> 4) & 0x7FF;
     }
     
-    /** Остаток поездок (пригород) */
     get tripsQuantitySuburban(): number {
         return (this.data[42] & 0b01111111) | ((this.units & 0b00001111) << 7);
     }
 
-    toString() {
+    toString(): string {
         return `OmskLimitedCard(tripsQuantity=${this.tripsQuantity}, tripsQuantitySuburban=${this.tripsQuantitySuburban}, productType=${ProductType[this.productType]})`;
     }
 }

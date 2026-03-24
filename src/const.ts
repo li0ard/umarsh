@@ -1,21 +1,15 @@
-/** Тип транспорта */
 export enum TransportType {
     BUS = 1,
     TROLLEYBUS,
     TRAMWAY
 }
 
-/** Тип карты (технический) */
 export enum TechnologicalType {
-    /** Карта пассажира */
     Passenger,
-    /** Карта оператора */
     Operator,
-    /** Прочие карты */
     Other, // для значений 2 и 3
 }
 
-/** Тип проездного */
 export enum ProductType {
     /** Electronic Purse */
     EP,
@@ -23,10 +17,12 @@ export enum ProductType {
     SU = 0x64,
     /** Season Limited */
     SL = 0x65,
+    ET = 0x66, // unknown
+    CT = 0x67, // unknown
     /** Limited Trip */
     LT = 0x69,
     /** Omsk Limited */
     OL = 0x6a,
     /** Unknown */
-    Unknown = 0x7F
+    Unknown = 0x7F // mentioned as "BL"
 }

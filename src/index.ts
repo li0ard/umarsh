@@ -3,15 +3,16 @@ import { TransitPass, SeasonUnlimitedCard, SeasonLimitedCard, LimitedCard, OmskL
 import { decodeDate, decodeTime } from "./utils.js";
 
 /**
- * **Блок последней поездки (aka ID-сектор)**
+ * **Last trip block (aka ID-sector)**
  * 
- * Расположен в секторе 0, блок 1
+ * Located in sector 0, block 1
  */
 export class IDSector {
     public readonly transportType: TransportType;
     public readonly date: Date;
     public readonly route: string;
     public readonly transportNum: string;
+
     constructor(data: Uint8Array) {
         if(data.length != 16) throw new Error("Block must be 16 bytes long");
         this.transportType = data[0] >> 4;
@@ -26,15 +27,15 @@ export class IDSector {
         this.transportNum = new TextDecoder().decode(data.subarray(10)).replaceAll("\x00", "");
     }
 
-    toString() {
+    toString(): string {
         return `IDSector(transportType=${TransportType[this.transportType]}, date=${this.date}, route=${this.route}, transportNum=${this.transportNum})`;
     }
 }
 
 /**
- * **Транспортное приложение (aka BitmapB)**
+ * **Transport layout (aka BitmapB)**
  * 
- * Занимает весь сектор 8
+ * Located in sector 8
  */
 export class BitmapB {
     public readonly version: number;
@@ -53,9 +54,6 @@ export class BitmapB {
         if(data.length < 48) throw new Error("Bitmap must be 48 bytes at least");
         this.version = this.data[16] >> 5;
         this.methodProcessingOfBlock4 = this.data[16] & 1;
-
-        const techType = this.technologicalType;
-        
         this.regionCode = ((this.data[24] >> 1) & 0b01110000 )| (this.data[28] & 0b00001111);
         this.cardSeries = this.data[29] & 0b01111111;
         this.cardNumber = (((data[24] << 24) | (data[25] << 16) | (data[26] << 8) | data[27]) >>> 0) & 0xFFFFFFF;
@@ -63,17 +61,17 @@ export class BitmapB {
 
         this.irreversibleValue = ((data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0]) >>> 0;
 
-        if(techType == TechnologicalType.Passenger) {
+        if(this.technologicalType == TechnologicalType.Passenger) {
             this.cardSettings = new PassengerCardSettings(data);
             this.transitPass = this.createTransitPass();
         }
     }
 
-    toString() {
+    toString(): string {
         return `BitmapB(version=${this.version}, methodProcessingOfBlock4=${this.methodProcessingOfBlock4}, regionCode=${this.regionCode}, cardSeries=${this.cardSeries}, cardNumber=${this.cardNumber}, expireOrActivateDate=${this.expireOrActivateDate}, irreversibleValue=${this.irreversibleValue}, cardSettings=${this.cardSettings?.toString() ?? null}, transitPass=${this.transitPass?.toString() ?? null})`;
     }
 
-    private get productType(): ProductType {
+    /*private get productType(): ProductType {
         const productType = this.data[30] & 0b01111111;
         if (productType <= 0x63) return ProductType.EP;
         if (productType === 0x64) return ProductType.SU;
@@ -83,12 +81,20 @@ export class BitmapB {
         if (productType === 0x7F) return ProductType.Unknown;
 
         return ProductType.EP;
+    }*/
+
+    private get technologicalType(): TechnologicalType {
+        const techType = (this.data[16] >> 1) & 3;
+        if (techType === 0) return TechnologicalType.Passenger;
+        if (techType === 1) return TechnologicalType.Operator;
+
+        return TechnologicalType.Other;
     }
 
     private createTransitPass(): TransitPass | undefined {
-        if (this.technologicalType !== TechnologicalType.Passenger) return undefined;
+        if (this.technologicalType !== TechnologicalType.Passenger || !this.cardSettings) return undefined;
         
-        switch (this.productType) {
+        switch (this.cardSettings.transportCardCode) {
             case ProductType.SU:
                 return new SeasonUnlimitedCard(this.data);
             case ProductType.SL:
@@ -103,13 +109,5 @@ export class BitmapB {
             default:
                 return new ElectronicPurseCard(this.data);
         }
-    }
-
-    private get technologicalType(): TechnologicalType {
-        const techType = (this.data[16] >> 1) & 3;
-        if (techType === 0) return TechnologicalType.Passenger;
-        if (techType === 1) return TechnologicalType.Operator;
-
-        return TechnologicalType.Other;
     }
 }

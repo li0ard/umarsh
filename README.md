@@ -14,6 +14,26 @@
 
 [Umarsh](https://umarsh.ru) (Умарш, short for "Удобный маршрут", which traslates to "convenient route") - developer of public transport transit pass system. It delivers turnkey projects for numerous regions (Omsk, Nizhny Novgorod, Yekaterinburg, etc.)
 
+## Parser
+
+### Installation
+
+```bash
+npm i @li0ard/umarsh
+```
+
+### Examples
+
+```ts
+import { BitmapB, IDSector } from "@li0ard/umarsh";
+
+const transport = Uint8Array.fromHex("FFFFFF7F.....25");
+console.log(new BitmapB(transport).toString());
+
+const lasttrip = Uint8Array.fromHex("25F33472363900000000363035300000");
+console.log(new IDSector(lasttrip));
+```
+
 ## Definitions
 
 ### Keys & sectors

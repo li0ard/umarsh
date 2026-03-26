@@ -4,13 +4,11 @@
     <!--<br>
     <a href="https://li0ard.is-cool.dev/umarsh">docs</a>-->
     <br><br>
-    <!--
     <a href="https://github.com/li0ard/umarsh/actions/workflows/test.yml"><img src="https://github.com/li0ard/umarsh/actions/workflows/test.yml/badge.svg" /></a>
     <a href="https://github.com/li0ard/umarsh/blob/main/LICENSE"><img src="https://img.shields.io/github/license/li0ard/umarsh" /></a>
     <br>
     <a href="https://npmjs.com/package/@li0ard/umarsh"><img src="https://img.shields.io/npm/v/@li0ard/umarsh" /></a>
     <br>
-    -->
     <hr>
 </p>
 

@@ -1,11 +1,32 @@
 {
   "name": "@li0ard/umarsh",
-  "module": "src/index.ts",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "author": "li0ard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/li0ard/umarsh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/li0ard/umarsh/issues"
+  },
+  "homepage": "https://github.com/li0ard/umarsh#readme",
+  "description": "Umarsh (transit pass system) parser",
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf dist/ && tsc --project tsconfig.build.json"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": ["umarsh","transport"]
 }
